@@ -373,7 +373,7 @@ $(LINUX_PATH)/.config: $(LINUX_DEFCONFIG_COMMON_FILES)
 		ARCH=$(LINUX_DEFCONFIG_COMMON_ARCH) \
 		CROSS_COMPILE=$(CROSS_COMPILE_NS_KERNEL) \
 		scripts/kconfig/merge_config.sh $(LINUX_DEFCONFIG_COMMON_FILES) \
-			$(LINUX_DEFCONFIG_BENCH)
+			$(LINUX_DEFCONFIG_BENCH) $(LINUX_DEFCONFIG_CCA_SUPPORT)
 
 .PHONY: linux-defconfig-clean-common
 linux-defconfig-clean-common:
