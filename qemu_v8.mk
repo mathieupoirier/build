@@ -29,6 +29,8 @@ GICV3 = y
 QEMU_VIRTFS_AUTOMOUNT = y
 endif
 
+CCA_SUPPORT ?= y
+
 include common.mk
 
 DEBUG ?= 1
@@ -302,6 +304,10 @@ LINUX_DEFCONFIG_COMMON_ARCH := arm64
 LINUX_DEFCONFIG_COMMON_FILES := \
 		$(LINUX_PATH)/arch/arm64/configs/defconfig \
 		$(CURDIR)/kconfigs/qemu.conf
+
+ifeq ($(CCA_SUPPORT),y)
+LINUX_DEFCONFIG_CCA_SUPPORT := $(CURDIR)/kconfigs/cca.conf
+endif
 
 linux-defconfig: $(LINUX_PATH)/.config
 
