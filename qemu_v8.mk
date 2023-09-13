@@ -29,6 +29,8 @@ GICV3 = y
 QEMU_VIRTFS_AUTOMOUNT = y
 endif
 
+CCA_SUPPORT ?= n
+
 include common.mk
 
 DEBUG ?= 1
