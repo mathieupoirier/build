@@ -56,8 +56,13 @@ AARCH64_CROSS_COMPILE 		?= $(AARCH64_PATH)/bin/aarch64-linux-gnu-
 AARCH64_GCC_VERSION 		?= arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu
 SRC_AARCH64_GCC 		?= https://developer.arm.com/-/media/Files/downloads/gnu/11.3.rel1/binrel/$(AARCH64_GCC_VERSION).tar.xz
 
+AARCH64_NONE_ELF_PATH 		?= $(TOOLCHAIN_ROOT)/aarch64-none-elf
+AARCH64_NONE_ELF_CROSS_COMPILE 	?= $(AARCH64_NONE_ELF_PATH)/bin/aarch64-none-elf-
+AARCH64_NONE_ELF_GCC_VERSION	?= gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf
+SRC_AARCH64_NONE_ELF_GCC 	?= https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/$(AARCH64_NONE_ELF_GCC_VERSION).tar.xz
+
 .PHONY: toolchains
-toolchains: aarch32 aarch64
+toolchains: aarch32 aarch64 aarch64-none-elf
 
 .PHONY: aarch32
 aarch32:
@@ -66,6 +71,12 @@ aarch32:
 .PHONY: aarch64
 aarch64:
 	$(call dltc,$(AARCH64_PATH),$(SRC_AARCH64_GCC),$(AARCH64_GCC_VERSION))
+
+.PHONY: aarch64-none-elf
+aarch64-none-elf:
+ifeq ($(CCA_SUPPORT),y)
+	$(call dltc,$(AARCH64_NONE_ELF_PATH),$(SRC_AARCH64_NONE_ELF_GCC),$(AARCH64_NONE_ELF_GCC_VERSION))
+endif
 
 CLANG_VER			?= 12.0.0
 CLANG_PATH			?= $(ROOT)/clang-$(CLANG_VER)
