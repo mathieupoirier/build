@@ -67,6 +67,8 @@ UBOOT_BIN		?= $(UBOOT_PATH)/u-boot.bin
 MKIMAGE_PATH		?= $(UBOOT_PATH)/tools
 HAFNIUM_PATH		?= $(ROOT)/hafnium
 HAFNIUM_BIN		?= $(HAFNIUM_PATH)/out/reference/secure_qemu_aarch64_clang/hafnium.bin
+RMM_PATH		?= $(ROOT)/rmm
+RMM_BIN			?= $(RMM_PATH)/build/Debug/rmm.img
 
 ROOTFS_GZ		?= $(BINARIES_PATH)/rootfs.cpio.gz
 ROOTFS_UGZ		?= $(BINARIES_PATH)/rootfs.cpio.uboot
@@ -118,6 +120,11 @@ TARGET_CLEAN		+= u-boot-clean
 
 ifeq ($(XEN_BOOT),y)
 TARGET_DEPS		+= xen-create-image
+endif
+
+ifeq ($(CCA_SUPPORT),y)
+RMM_DEPS		?= rmm
+TARGET_CLEAN		+= rmm-clean
 endif
 
 all: $(TARGET_DEPS)
@@ -205,7 +212,7 @@ ifeq ($(MEMTAG),y)
 TF_A_FLAGS += CTX_INCLUDE_MTE_REGS=1
 endif
 
-arm-tf: $(BL32_DEPS) $(BL33_DEPS)
+arm-tf: $(BL32_DEPS) $(BL33_DEPS) $(RMM_DEPS)
 	$(TF_A_EXPORTS) $(MAKE) -C $(TF_A_PATH) $(TF_A_FLAGS) all fip
 	mkdir -p $(BINARIES_PATH)
 	ln -sf $(TF_A_OUT)/bl1.bin $(BINARIES_PATH)
@@ -380,6 +387,32 @@ hafnium: $(HAFNIUM_BIN)
 $(HAFNIUM_BIN): .hafnium_checkout | $(OUT_PATH)
 	$(HAFNIUM_EXPORTS) $(MAKE) -C $(HAFNIUM_PATH) $(HAFNIUM_FLAGS) all
 
+################################################################################
+# RMM
+################################################################################
+
+RMM_EXPORTS = CROSS_COMPILE=$(AARCH64_NONE_ELF_CROSS_COMPILE)
+RMM_BUILD_TYPE = Debug
+RMM_LOG_LEVEL = 40
+
+.rmm_checkout:
+	git -C $(RMM_PATH) submodule update --init
+	touch $@
+
+$(RMM_PATH)/build: .rmm_checkout
+	pushd $(RMM_PATH)
+	$(RMM_EXPORTS) cmake -DRMM_CONFIG=qemu_virt_defcfg \
+				-DCMAKE_BUILD_TYPE=$(RMM_BUILD_TYPE) \
+				-DLOG_LEVEL=$(RMM_LOG_LEVEL) \
+				-S $(RMM_PATH) \
+				-B $(RMM_PATH)/build
+
+rmm: $(RMM_PATH)/build
+	pushd $(RMM_PATH)
+	$(RMM_EXPORTS) cmake --build $(RMM_PATH)/build
+
+rmm-clean:
+	rm -rf $(RMM_PATH)/build
 
 ################################################################################
 # mkimage - create images to be loaded by U-Boot
