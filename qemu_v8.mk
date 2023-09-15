@@ -29,7 +29,7 @@ GICV3 = y
 QEMU_VIRTFS_AUTOMOUNT = y
 endif
 
-CCA_SUPPORT ?= y
+CCA_SUPPORT ?= n
 
 include common.mk
 
@@ -203,6 +203,20 @@ TF_A_FLAGS += \
 	MBEDTLS_DIR=$(ROOT)/mbedtls \
 	TRUSTED_BOARD_BOOT=1 \
 	GENERATE_COT=1
+endif
+
+ifeq ($(CCA_SUPPORT),y)
+TF_A_FLAGS += \
+	ENABLE_RME=1 \
+	RMM=$(RMM_BIN) \
+	ARM_DISABLE_TRUSTED_WDOG=1 \
+	FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts \
+	ARM_ARCH_MINOR=5 \
+	BRANCH_PROTECTION=1 \
+	CTX_INCLUDE_PAUTH_REGS=1 \
+	CTX_INCLUDE_EL2_REGS=1 \
+	CTX_INCLUDE_MTE_REGS=1 \
+	SPMD_SPM_AT_SEL2=1
 endif
 
 ifeq ($(PAUTH),y)
