@@ -119,8 +119,7 @@ TARGET_DEPS		+= $(KERNEL_UIMAGE) $(ROOTFS_UGZ)
 TARGET_CLEAN		+= u-boot-clean
 
 ifeq ($(XEN_BOOT),y)
-TARGET_DEPS		+= xen-create-image buildroot-domu
-TARGET_CLEAN		+= buildroot-domu-clean
+TARGET_DEPS		+= xen-create-image
 endif
 
 ifeq ($(CCA_SUPPORT),y)
@@ -380,6 +379,11 @@ ifeq ($(MEMTAG),y)
 OPTEE_OS_COMMON_FLAGS += CFG_MEMTAG=y
 endif
 
+ifneq ($(QEMU_SMP),)
+CFG_TEE_CORE_NB_CORE ?= $(QEMU_SMP)
+OPTEE_OS_COMMON_FLAGS += CFG_TEE_CORE_NB_CORE=$(CFG_TEE_CORE_NB_CORE)
+endif
+
 OPTEE_OS_COMMON_FLAGS += $(OPTEE_OS_COMMON_FLAGS_SPMC_AT_EL_$(SPMC_AT_EL))
 
 optee-os: optee-os-common
@@ -489,7 +493,7 @@ run: all
 
 ifeq ($(XEN_BOOT),y)
 QEMU_CPU	?= cortex-a57
-QEMU_MEM 	?= 2048
+QEMU_MEM 	?= 3072
 QEMU_SMP	?= 4
 QEMU_VIRT	= true
 QEMU_XEN	?= -drive if=none,file=$(XEN_EXT4),format=raw,id=hd1 \
@@ -528,7 +532,7 @@ run-only:
 	$(call wait-for-ports,54320,54321)
 	cd $(BINARIES_PATH) && $(QEMU_BUILD)/aarch64-softmmu/qemu-system-aarch64 \
 		-nographic \
-		-serial tcp:localhost:54320 -serial tcp:localhost:54321 \
+		-serial tcp:127.0.0.1:54320 -serial tcp:127.0.0.1:54321 \
 		-smp $(QEMU_SMP) \
 		-s -S -machine virt,acpi=off,secure=on,mte=$(QEMU_MTE),gic-version=$(QEMU_GIC_VERSION),virtualization=$(QEMU_VIRT) \
 		-cpu $(QEMU_CPU) \

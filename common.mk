@@ -355,31 +355,6 @@ buildroot-clean:
 buildroot-cleaner:
 	@rm -rf $(ROOT)/out-br
 
-.PHONY: buildroot-domu
-buildroot-domu: optee-os
-	@mkdir -p ../out-br-domu
-	@rm -f ../out-br-domu/build/optee_*/.stamp_*
-	@rm -f ../out-br-domu/extra.conf
-	@$(call append-br2-vars,../out-br-domu/extra.conf)
-	@(cd .. && $(PYTHON3) build/br-ext/scripts/make_def_config.py \
-		--br buildroot --out out-br-domu --br-ext build/br-ext \
-		--top-dir "$(ROOT)" \
-		--br-defconfig build/br-ext/configs/optee_$(BUILDROOT_ARCH) \
-		--br-defconfig build/br-ext/configs/optee_generic \
-		--br-defconfig build/br-ext/configs/$(BUILDROOT_TOOLCHAIN) \
-		$(DEFCONFIG_GDBSERVER) \
-		--br-defconfig out-br-domu/extra.conf \
-		--make-cmd $(MAKE))
-	@$(MAKE) $(br-make-flags) -C ../out-br-domu all
-
-.PHONY: buildroot-domu-clean
-buildroot-domu-clean:
-	@test ! -d $(ROOT)/out-br-domu || $(MAKE) -C $(ROOT)/out-br-domu clean
-
-.PHONY: buildroot-domu-cleaner
-buildroot-domu-cleaner:
-	@rm -rf $(ROOT)/out-br-domu
-
 ################################################################################
 # Linux
 ################################################################################
@@ -557,6 +532,8 @@ OPTEE_OS_TA_CROSS_COMPILE_FLAGS	+= CROSS_COMPILE_ta_rv64="$(CCACHE)$(RISCV64_CRO
 OPTEE_OS_TA_CROSS_COMPILE_FLAGS	+= CROSS_COMPILE_ta_rv32="$(CCACHE)$(RISCV32_CROSS_COMPILE)"
 endif
 
+CFG_IN_TREE_EARLY_TAS ?= trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
+
 OPTEE_OS_COMMON_FLAGS ?= \
 	$(OPTEE_OS_COMMON_EXTRA_FLAGS) \
 	PLATFORM=$(OPTEE_OS_PLATFORM) \
@@ -566,7 +543,7 @@ OPTEE_OS_COMMON_FLAGS ?= \
 	CFG_TEE_CORE_LOG_LEVEL=$(CFG_TEE_CORE_LOG_LEVEL) \
 	DEBUG=$(DEBUG) \
 	CFG_TEE_BENCHMARK=$(CFG_TEE_BENCHMARK) \
-	CFG_IN_TREE_EARLY_TAS=trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
+	CFG_IN_TREE_EARLY_TAS="$(CFG_IN_TREE_EARLY_TAS)"
 
 .PHONY: optee-os-common
 optee-os-common:
