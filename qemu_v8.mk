@@ -59,6 +59,15 @@ MEMTAG ?= n
 ################################################################################
 TF_A_PATH		?= $(ROOT)/trusted-firmware-a
 BINARIES_PATH		?= $(ROOT)/out/bin
+EDK2_PATH		?= $(ROOT)/edk2
+EDK2_TOOLCHAIN		?= GCC5
+EDK2_ARCH		?= AARCH64
+ifeq ($(DEBUG),1)
+EDK2_BUILD		?= DEBUG
+else
+EDK2_BUILD		?= RELEASE
+endif
+EDK2_BIN		?= $(EDK2_PATH)/Build/ArmVirtQemuKernel-$(EDK2_ARCH)/$(EDK2_BUILD)_$(EDK2_TOOLCHAIN)/FV/QEMU_EFI.fd
 QEMU_PATH		?= $(ROOT)/qemu
 QEMU_BUILD		?= $(QEMU_PATH)/build
 MODULE_OUTPUT		?= $(ROOT)/out/kernel_modules
@@ -90,8 +99,14 @@ else
 BL32_DEPS		?= optee-os
 endif
 
+# Only CCA support needs EDK2, everything else is using uboot
+ifeq ($(CCA_SUPPORT),y)
+BL33_BIN		?= $(EDK2_BIN)
+BL33_DEPS		?= edk2
+else
 BL33_BIN		?= $(UBOOT_BIN)
 BL33_DEPS		?= u-boot
+endif
 
 XEN_PATH		?= $(ROOT)/xen
 XEN_IMAGE		?= $(ROOT)/out-br/build/xen-4.14.5/xen/xen.efi
@@ -115,8 +130,13 @@ TARGET_CLEAN := arm-tf-clean buildroot-clean linux-clean optee-os-clean \
 
 TARGET_DEPS 		+= $(BL33_DEPS)
 
+# Only CCA support needs EDK2, everything else is using uboot
+ifeq ($(CCA_SUPPORT),y)
+TARGET_CLEAN		+= edk2-clean
+else
 TARGET_DEPS		+= $(KERNEL_UIMAGE) $(ROOTFS_UGZ)
 TARGET_CLEAN		+= u-boot-clean
+endif
 
 ifeq ($(XEN_BOOT),y)
 TARGET_DEPS		+= xen-create-image
@@ -413,6 +433,24 @@ rmm: $(RMM_PATH)/build
 
 rmm-clean:
 	rm -rf $(RMM_PATH)/build
+
+################################################################################
+# EDK2 / Tianocore
+################################################################################
+define edk2-env
+	export WORKSPACE=$(EDK2_PATH) PYTHON3_ENABLE=TRUE
+endef
+
+define edk2-call
+	$(EDK2_TOOLCHAIN)_$(EDK2_ARCH)_PREFIX=$(AARCH64_CROSS_COMPILE) \
+	build -n `getconf _NPROCESSORS_ONLN` -a $(EDK2_ARCH) \
+		-t $(EDK2_TOOLCHAIN) -p ArmVirtPkg/ArmVirtQemuKernel.dsc \
+		-b $(EDK2_BUILD)
+endef
+
+edk2: edk2-common
+
+edk2-clean: edk2-clean-common
 
 ################################################################################
 # mkimage - create images to be loaded by U-Boot
