@@ -176,13 +176,21 @@ TF_A_FLAGS ?= \
 	PLAT=qemu \
 	DEBUG=$(TF_A_DEBUG) \
 	LOG_LEVEL=$(TF_A_LOGLVL) \
-	QEMU_USE_GIC_DRIVER=$(TFA_GIC_DRIVER) \
+	QEMU_USE_GIC_DRIVER=$(TFA_GIC_DRIVER)
+
+ifeq ($(CCA_SUPPORT),y)
+	TF_A_FLAGS += \
+	ENABLE_RME=1 \
+	RMM=$(RMM_BIN)
+else
+	TF_A_FLAGS += \
 	ENABLE_SVE_FOR_NS=2 \
 	ENABLE_SME_FOR_NS=2 \
 	ENABLE_SVE_FOR_SWD=1 \
 	ENABLE_SME_FOR_SWD=1 \
 	ENABLE_FEAT_FGT=2 \
 	BL32_RAM_LOCATION=tdram
+endif
 
 TF_A_FLAGS_BL32_OPTEE  = BL32=$(OPTEE_OS_HEADER_V2_BIN)
 TF_A_FLAGS_BL32_OPTEE += BL32_EXTRA1=$(OPTEE_OS_PAGER_V2_BIN)
@@ -216,7 +224,9 @@ TF_A_FLAGS_SPMC_AT_EL_3 += ENABLE_SME_FOR_NS=0 ENABLE_SME_FOR_SWD=0
 TF_A_FLAGS_SPMC_AT_EL_3 += BL32=$(OPTEE_OS_PAGER_V2_BIN)
 TF_A_FLAGS_SPMC_AT_EL_3 += QEMU_TOS_FW_CONFIG_DTS=../build/qemu_v8/spmc_el3_manifest.dts
 
+ifeq ($(CCA_SUPPORT),n)
 TF_A_FLAGS += $(TF_A_FLAGS_SPMC_AT_EL_$(SPMC_AT_EL))
+endif
 
 ifeq ($(TF_A_TRUSTED_BOARD_BOOT),y)
 TF_A_FLAGS += \
@@ -270,6 +280,11 @@ else ifeq ($(SPMC_AT_EL),3)
 	ln -sf $(TF_A_OUT)/fdts/spmc_el3_manifest.dtb \
 		$(BINARIES_PATH)/tos_fw_config.dtb
 	ln -sf $(OPTEE_OS_PAGER_V2_BIN) $(BINARIES_PATH)/bl32.bin
+else ifeq ($(CCA_SUPPORT),y)
+	# Pack the whole image into a single flash.bin
+	dd if=$(TF_A_OUT)/bl1.bin of=$(TF_A_OUT)/flash.bin
+	dd if=$(TF_A_OUT)/fip.bin of=$(TF_A_OUT)/flash.bin seek=64 bs=4096
+	ln -sf $(TF_A_OUT)/flash.bin $(BINARIES_PATH)/flash.bin
 else
 	ln -sf $(OPTEE_OS_HEADER_V2_BIN) $(BINARIES_PATH)/bl32.bin
 	ln -sf $(OPTEE_OS_PAGER_V2_BIN) $(BINARIES_PATH)/bl32_extra1.bin
