@@ -70,6 +70,7 @@ endif
 EDK2_BIN		?= $(EDK2_PATH)/Build/ArmVirtQemuKernel-$(EDK2_ARCH)/$(EDK2_BUILD)_$(EDK2_TOOLCHAIN)/FV/QEMU_EFI.fd
 QEMU_PATH		?= $(ROOT)/qemu
 QEMU_BUILD		?= $(QEMU_PATH)/build
+QEMU_TARGET_PATH	?= $(ROOT)/qemu.target
 MODULE_OUTPUT		?= $(ROOT)/out/kernel_modules
 UBOOT_PATH		?= $(ROOT)/u-boot
 UBOOT_BIN		?= $(UBOOT_PATH)/u-boot.bin
@@ -300,7 +301,15 @@ arm-tf-clean:
 ################################################################################
 # QEMU
 ################################################################################
-$(QEMU_BUILD)/config-host.mak:
+ifeq ($(CCA_SUPPORT),y)
+.qemu_target:
+	cp -rpR $(QEMU_PATH) $(QEMU_TARGET_PATH)
+	touch $@
+else
+.qemu_target:
+endif
+
+$(QEMU_BUILD)/config-host.mak: .qemu_target
 	cd $(QEMU_PATH); ./configure --target-list=aarch64-softmmu --enable-slirp\
 			$(QEMU_CONFIGURE_PARAMS_COMMON)
 
