@@ -263,6 +263,10 @@ BUILDROOT_TOOLCHAIN=toolchain-aarch$(COMPILE_NS_USER)-sdk
 endif
 endif
 
+ifeq ($(CCA_SUPPORT),y)
+DEFCONFIG_EXT2=--br-defconfig build/br-ext/configs/ext2fs.conf
+endif
+
 ifeq ($(XEN_BOOT),y)
 DEFCONFIG_XEN=--br-defconfig build/br-ext/configs/xen.conf
 # The version of Xen provided by Buildroot needs a few patches to work with
@@ -326,8 +330,16 @@ ifneq (y,$(BR2_PER_PACKAGE_DIRECTORIES))
 br-make-flags := -j1
 endif
 
+ifeq ($(CCA_SUPPORT),y)
+.buildroot_local_mk:
+	echo 'QEMU_OVERRIDE_SRCDIR=$(QEMU_TARGET_PATH)' > $(BUILDROOT_PATH)/local.mk
+	touch $@
+else
+.buildroot_local_mk:
+endif
+
 .PHONY: buildroot
-buildroot: optee-os optee-rust
+buildroot: optee-os optee-rust .buildroot_local_mk
 	@mkdir -p ../out-br
 	@rm -f ../out-br/build/optee_*/.stamp_*
 	@rm -f ../out-br/extra.conf
@@ -343,6 +355,7 @@ buildroot: optee-os optee-rust
 		$(DEFCONFIG_TSS) \
 		$(DEFCONFIG_TPM_MODULE) \
 		$(DEFCONFIG_FTPM) \
+		$(DEFCONFIG_EXT2) \
 		--br-defconfig out-br/extra.conf \
 		--make-cmd $(MAKE))
 	@$(MAKE) $(br-make-flags) -C ../out-br all
