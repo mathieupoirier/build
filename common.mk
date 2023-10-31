@@ -330,16 +330,9 @@ ifneq (y,$(BR2_PER_PACKAGE_DIRECTORIES))
 br-make-flags := -j1
 endif
 
-ifeq ($(CCA_SUPPORT),y)
-.buildroot_local_mk:
-	echo 'QEMU_OVERRIDE_SRCDIR=$(QEMU_TARGET_PATH)' > $(BUILDROOT_PATH)/local.mk
-	touch $@
-else
-.buildroot_local_mk:
-endif
-
+ifeq ($(CCA_SUPPORT),n)
 .PHONY: buildroot
-buildroot: optee-os optee-rust .buildroot_local_mk
+buildroot: optee-os optee-rust
 	@mkdir -p ../out-br
 	@rm -f ../out-br/build/optee_*/.stamp_*
 	@rm -f ../out-br/extra.conf
@@ -355,10 +348,22 @@ buildroot: optee-os optee-rust .buildroot_local_mk
 		$(DEFCONFIG_TSS) \
 		$(DEFCONFIG_TPM_MODULE) \
 		$(DEFCONFIG_FTPM) \
-		$(DEFCONFIG_EXT2) \
 		--br-defconfig out-br/extra.conf \
 		--make-cmd $(MAKE))
 	@$(MAKE) $(br-make-flags) -C ../out-br all
+else
+.PHONY: buildroot
+buildroot:
+	@mkdir -p ../out-br
+	@echo 'QEMU_OVERRIDE_SRCDIR=$(QEMU_TARGET_PATH)' > ../out-br/local.mk
+	@(cd .. && $(PYTHON3) build/br-ext/scripts/make_def_config.py \
+		--br buildroot --out out-br --br-ext build/br-ext \
+		--top-dir "$(ROOT)" \
+		--br-defconfig buildroot/configs/qemu_aarch64_virt_defconfig \
+		$(DEFCONFIG_EXT2) \
+		--make-cmd $(MAKE))
+	@$(MAKE) -C ../out-br all
+endif
 
 .PHONY: buildroot-clean
 buildroot-clean:
