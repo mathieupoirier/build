@@ -88,6 +88,7 @@ KERNEL_IMAGEGZ		?= $(LINUX_PATH)/arch/arm64/boot/Image.gz
 KERNEL_UIMAGE		?= $(BINARIES_PATH)/uImage
 
 BUILDROOT_PATH		?= $(ROOT)/buildroot
+BUILDROOT_BINARIES_PATH	?= $(ROOT)/out-br
 
 # Load and entry addresses (u-boot only)
 # If you change this please also change in kconfigs/u-boot_qemu_v8.conf
@@ -568,6 +569,7 @@ else
 QEMU_MTE	= off
 endif
 
+ifeq ($(CCA_SUPPORT),n)
 .PHONY: run-only
 run-only:
 	ln -sf $(ROOT)/out-br/images/rootfs.cpio.gz $(BINARIES_PATH)/
@@ -590,7 +592,43 @@ run-only:
 		-append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2 $(QEMU_KERNEL_BOOTARGS)' \
 		$(QEMU_XEN) \
 		$(QEMU_EXTRA_ARGS)
-
+else
+.PHONY: run-only
+run-only:
+	rm -f $(BINARIES_PATH)/Image
+	cp $(LINUX_PATH)/arch/arm64/boot/Image $(BINARIES_PATH)/
+	$(call check-terminal)
+	$(call run-help)
+	$(call launch-terminal,54320,"Firmware")
+	$(call launch-terminal,54321,"Secure")
+	$(call wait-for-ports,54320,54321)
+	$(call launch-terminal,54322,"host")
+	$(call launch-terminal,54323,"Realm")
+	$(call wait-for-ports,54322,54323)
+	cd $(BINARIES_PATH) && $(QEMU_BUILD)/aarch64-softmmu/qemu-system-aarch64 \
+	 -M virt,virtualization=on,secure=on,gic-version=3 \
+         -M acpi=off -cpu max,x-rme=on,sme=off -m 3G -smp 4 \
+         -nographic \
+         -bios flash.bin \
+	 -kernel Image \
+         -drive format=raw,if=none,file=$(BUILDROOT_BINARIES_PATH)/images/rootfs.ext4,id=hd0 \
+	 -device virtio-blk-pci,drive=hd0 \
+         -append root=/dev/vda \
+         -nodefaults \
+         -serial tcp:localhost:54320 \
+         -serial tcp:localhost:54321 \
+         -chardev socket,mux=on,id=hvc0,port=54322,host=localhost \
+         -device virtio-serial-device \
+         -device virtconsole,chardev=hvc0 \
+         -chardev socket,mux=on,id=hvc1,port=54323,host=localhost \
+         -device virtio-serial-device \
+         -device virtconsole,chardev=hvc1 \
+         -append "root=/dev/vda earlycon console=hvc0" \
+         -device virtio-net-pci,netdev=net0 \
+         -netdev user,id=net0 \
+         -device virtio-9p-device,fsdev=shr0,mount_tag=shr0 \
+         -fsdev local,security_model=none,path=../../,id=shr0
+endif
 ifneq ($(filter check check-rust,$(MAKECMDGOALS)),)
 CHECK_DEPS := all
 endif
