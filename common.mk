@@ -266,6 +266,7 @@ endif
 ifeq ($(CCA_SUPPORT),y)
 DEFCONFIG_EXT2=--br-defconfig build/br-ext/configs/ext2fs.conf
 DEFCONFIG_QEMU=--br-defconfig build/br-ext/configs/qemu.conf
+DEFCONFIG_CPIO=--br-defconfig build/br-ext/configs/cpio.conf
 endif
 
 ifeq ($(XEN_BOOT),y)
@@ -363,6 +364,7 @@ buildroot:
 		--br-defconfig buildroot/configs/qemu_aarch64_virt_defconfig \
 		$(DEFCONFIG_EXT2) \
 		$(DEFCONFIG_QEMU) \
+		$(DEFCONFIG_CPIO) \
 		--make-cmd $(MAKE))
 	@$(MAKE) -C ../out-br all
 endif
