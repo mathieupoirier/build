@@ -302,15 +302,7 @@ arm-tf-clean:
 ################################################################################
 # QEMU
 ################################################################################
-ifeq ($(CCA_SUPPORT),y)
-.qemu_target:
-	cp -rpR $(QEMU_PATH) $(QEMU_TARGET_PATH)
-	touch $@
-else
-.qemu_target:
-endif
-
-$(QEMU_BUILD)/config-host.mak: .qemu_target
+$(QEMU_BUILD)/config-host.mak:
 	cd $(QEMU_PATH); ./configure --target-list=aarch64-softmmu --enable-slirp\
 			$(QEMU_CONFIGURE_PARAMS_COMMON)
 

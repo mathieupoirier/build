@@ -355,7 +355,11 @@ buildroot: optee-os optee-rust
 	@$(MAKE) $(br-make-flags) -C ../out-br all
 else
 .PHONY: buildroot
-buildroot:
+.qemu_target:
+	cp -rpR $(QEMU_PATH) $(QEMU_TARGET_PATH)
+	cd $(QEMU_TARGET_PATH); ./configure --target-list=aarch64-softmmu; make clean
+	touch $@
+buildroot: .qemu_target
 	@mkdir -p ../out-br
 	@echo 'QEMU_OVERRIDE_SRCDIR=$(QEMU_TARGET_PATH)' > ../out-br/local.mk
 	@(cd .. && $(PYTHON3) build/br-ext/scripts/make_def_config.py \
