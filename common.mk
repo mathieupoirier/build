@@ -370,6 +370,7 @@ buildroot: .qemu_target
 		$(DEFCONFIG_QEMU) \
 		$(DEFCONFIG_CPIO) \
 		--make-cmd $(MAKE))
+	@../buildroot/utils/config --file ../out-br/.config --disable BR2_PACKAGE_QEMU_BLOBS
 	@$(MAKE) -C ../out-br all
 endif
 
